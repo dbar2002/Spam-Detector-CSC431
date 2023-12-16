@@ -1,22 +1,156 @@
-import java.util.Scanner;
+import javax.mail.internet.AddressException;
+import javax.swing.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
-public class SpamDetector {
+import javax.mail.internet.InternetAddress;
+public class SpamDetector extends JFrame{
+    private JTextArea messageTextArea;
+    private JTextField senderField;
+    private JTextField subjectField;
+    private JTextField recipientField;
+    private JButton checkSpamButton;
+    private static final String[] validDomains = {"gmail.com", "yahoo.com", "hotmail.com"};
+    public SpamDetector() {
+        setTitle("Spam Detector");
+        setSize(600, 400);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        initUI();
+        setLocationRelativeTo(null);
+        setVisible(true);
+    }
+
+    private void initUI() {
+        JPanel panel = new JPanel();
+
+        JLabel senderLabel = new JLabel("Sender:");
+        JLabel recipientLabel = new JLabel("Recipient:");
+        JLabel subjectLabel = new JLabel("Subject:");
+
+        senderField = new JTextField(30);
+        recipientField = new JTextField(30);
+        subjectField = new JTextField(30);
+
+        messageTextArea = new JTextArea(10, 30);
+        JScrollPane scrollPane = new JScrollPane(messageTextArea);
+
+        checkSpamButton = new JButton("Check Spam");
+
+        checkSpamButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String sender = senderField.getText();
+                String recipient = recipientField.getText();
+                String subject = subjectField.getText();
+                String message = messageTextArea.getText();
+
+                if (isValidDomain(sender) && isValidDomain(recipient)) {
+                    if(!isSpamSubject(subject)) {
+                        if (isSpam(message)) {
+                            JOptionPane.showMessageDialog(null, "Warning: This message appears to be spam!");
+                        } else {
+                            JOptionPane.showMessageDialog(null, "The message is not identified as spam.");
+                        }
+                    } else {
+                        int option = JOptionPane.showConfirmDialog(null, "This message appears to be spam based on the subject. Do you want to investigate further?",
+                                "Spam Detection", JOptionPane.YES_NO_OPTION);
+
+                        if (option == JOptionPane.YES_OPTION) {
+                            if (isSpam(message)) {
+                                JOptionPane.showMessageDialog(null, "Further investigation: The message is confirmed as spam!");
+                            } else {
+                                JOptionPane.showMessageDialog(null, "Further investigation: The message is not identified as spam.");
+                            }
+                        }
+                    }
+
+                } else {
+                    JOptionPane.showMessageDialog(null, "Invalid sender or recipient domain.");
+                }
+            }
+        });
+
+        GroupLayout layout = new GroupLayout(panel);
+        panel.setLayout(layout);
+        layout.setAutoCreateGaps(true);
+        layout.setAutoCreateContainerGaps(true);
+
+        layout.setHorizontalGroup(
+                layout.createSequentialGroup()
+                        .addGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING)
+                                .addComponent(senderLabel)
+                                .addComponent(recipientLabel)
+                                .addComponent(subjectLabel)
+                                .addComponent(scrollPane))
+                        .addGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING)
+                                .addComponent(senderField)
+                                .addComponent(recipientField)
+                                .addComponent(subjectField)
+                                .addComponent(checkSpamButton))
+        );
+
+        layout.setVerticalGroup(
+                layout.createSequentialGroup()
+                        .addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+                                .addComponent(senderLabel)
+                                .addComponent(senderField))
+                        .addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+                                .addComponent(recipientLabel)
+                                .addComponent(recipientField))
+                        .addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+                                .addComponent(subjectLabel)
+                                .addComponent(subjectField))
+                        .addComponent(scrollPane)
+                        .addComponent(checkSpamButton)
+        );
+
+        add(panel);
+    }
+    private boolean isValidDomain(String email) {
+        try {
+            InternetAddress internetAddress = new InternetAddress(email);
+            internetAddress.validate();
+
+
+            String[] parts = email.split("@");
+            if (parts.length == 2) {
+                String domain = parts[1].toLowerCase();
+                for (String validDomain : validDomains) {
+                    if (domain.equals(validDomain)) {
+                        return true;
+                    }
+                }
+            }
+        } catch (AddressException ex) {
+            return false;
+        }
+        return false;
+    }
 
     public static void main(String[] args) {
-        Scanner scanner = new Scanner(System.in);
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                new SpamDetector();
+            }
+        });
+    }
 
-        System.out.println("Enter a message:");
-        String message = scanner.nextLine();
 
-        if (isSpam(message)) {
-            System.out.println("Warning: This message appears to be spam!");
-        } else {
-            System.out.println("The message is not identified as spam.");
-        }
+    private static boolean isSpamSubject(String subject) {
+
+        String lowerCaseSubject = subject.trim().toLowerCase();
+        boolean containsSpamKeywords = isSpam(lowerCaseSubject);
+
+        System.out.println("Original Subject: " + subject);
+        System.out.println("Lowercase Subject: " + lowerCaseSubject);
+        System.out.println("Contains Spam Keywords: " + containsSpamKeywords);
+
+        return containsSpamKeywords;
     }
 
     private static boolean isSpam(String message) {
-        // Common spam keywords
+
         String[] spamKeywords = {
                 "100% more", "100% free", "100% satisfied", "additional income", "be your own boss",
                 "best price", "big bucks", "billion", "cash bonus", "cents on the dollar",
@@ -31,7 +165,6 @@ public class SpamDetector {
                 "potential earnings", "prize", "promise", "pure profit", "risk-free",
                 "satisfaction guaranteed", "save big money", "save up to", "special promotion",
 
-                // Additional keywords provided
                 "% satisfied", "% off", "acceptance", "accordingly", "act", "now", "affordable", "all", "new", "as", "seen on",
                 "auto email removal", "avoid", "bargain", "be amazed", "bonus", "brand new pager", "bulk email", "buy",
                 "buy direct", "buying judgments", "cable converter", "call", "call free", "call now", "can’t live without",
@@ -86,13 +219,11 @@ public class SpamDetector {
                 "while supplies last", "while you sleep", "will not believe your eyes"
         };
 
-        // Convert keywords to lowercase for case-insensitive matching
         String[] lowercaseKeywords = new String[spamKeywords.length];
         for (int i = 0; i < spamKeywords.length; i++) {
             lowercaseKeywords[i] = spamKeywords[i].toLowerCase();
         }
 
-        // Check if the message contains any spam keywords using case-insensitive matching
         for (String keyword : lowercaseKeywords) {
             if (message.toLowerCase().contains(keyword)) {
                 return true;
